@@ -4,10 +4,7 @@
 import unittest
 import string
 
-
-def is_special(char):
-    return not char.isalnum() and not char.isspace()
-
+from src.mostcommon import is_special
 
 class TestCharFilter(unittest.TestCase):
     def test_letter_is_not_special(self):

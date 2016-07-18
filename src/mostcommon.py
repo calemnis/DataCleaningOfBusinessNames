@@ -5,7 +5,9 @@ import csv
 import sys
 from collections import Counter
 
-from test.test_mostcommon import is_special
+
+def is_special(char):
+    return not char.isalnum() and not char.isspace()
 
 if __name__ == '__main__':
 
@@ -18,3 +20,4 @@ if __name__ == '__main__':
 
     for char, count in Chars.most_common(20):
         print(char, '\t', count)
+
