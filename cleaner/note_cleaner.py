@@ -21,8 +21,6 @@ class NotesCleaner:
                                       for phrase in self.compiled_stop_phrases]
 
     def filter_sales_notes(self, item):
-        # TODO
-        # write tests for this
         for compiled in self.compiled_stop_phrases:
             item = compiled.sub('', item)
         return item

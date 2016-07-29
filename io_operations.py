@@ -6,20 +6,20 @@ import csv
 
 if __name__ == '__main__':
 
-    with open(sys.argv[1], 'rt') as csvinputfile, open('business_names_only_every_tenth.csv', 'w') as outputfile:
-        csvreader = csv.reader(csvinputfile, delimiter = '\t')
+    with open(sys.argv[1], 'rt') as csvinputfile, open('filtered_regnames_every_tenth.tsv', 'w') as outputfile:
+        csvreader = csv.reader(csvinputfile, delimiter='\t')
 
         first_line = csvinputfile.readline()
-        first_line = first_line.split('\t')
-        first_item = first_line[1]
-        outputfile.write(first_item + '\n')
+        #first_line = first_line.split('\t')
+        #first_item = first_line[1]
+        outputfile.write(first_line)
 
-        business_list = []
+        name_regname_list = []
 
         for row in csvreader:
-            business_list.append(row[1])
+            name_regname_list.append(row[0] + '\t' + row[1])
 
-        business_list = business_list[0::10]
-        for item in business_list:
+        name_regname_list = name_regname_list[0::10]
+        for item in name_regname_list:
             outputfile.write(item + '\n')
 

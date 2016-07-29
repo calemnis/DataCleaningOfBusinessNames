@@ -8,27 +8,22 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.cleaner.note_cleaner import NotesCleaner
+from src.cleaner.country_cleaner import CountriesCleaner
 from src.init import config
 
 cleaned_list = [] #this will contain other lists
-countries_set = []
-i = 0
 
 #TODO
-#continue identificate the junk cases
-#examine cardinality of occurring country names, mainly whole names
-
 #decide which country cases should be filtered and by what means:
-#regexes only?
-#regexes firstly for subproblems, like Random BusinessName TW/HK/JP?
+#country subproblem: Random BusinessName TW/HK/JP?
 
-#some smaller cases: formerly (281 cases), ehemals, ehem., ehemalige, migrated, many types of licence...
-#...migrated (stop word now), konfidentiellt, konzerlösung, other foreign language expressions
-#there may be sales notes not yet discovered
+#konfidentiellt, konzerlösung, other foreign language expressions
+#same pattern is in parentheses
+#dach
 
-#think about small junks, strings left little special characters like **, #, ^, !!!!!, -, etc
+#think about small junks, strings left little special characters like **, #, ^, !!!!!, -, one letters (c), etc
 
-#renaming values, func names
+#all the time renaming values, func names!
 #filter redundant - module regex, pythex, PCRE library may improve readability
 
 #home work from David! rest api - queries can be multiple
@@ -37,18 +32,30 @@ i = 0
 
 def separate_elements(line):
 
-    #print(line.strip())
-    strings_list = split_by_delimiters(line.strip())
-
+    print(line.strip())
+    line = cut_redundant(line.strip())
+    strings_list = split_by_delimiters(line)
     cleaned_strings_list = []
     for item in strings_list:
         item = filter_redundant(item)
         item = cleaner.filter_sales_notes(item)
+        item = countries_cleaner.filter_alone_countries(item)
         cleaned_strings_list.append(item)
 
     strings_list = strip_elements(cleaned_strings_list)
-    #print(strings_list)
+    print(strings_list)
+
     return strings_list
+
+
+def cut_redundant(expression):
+
+    for pattern in config.cutpatterns:
+        search_obj = pattern.search(expression)
+        if search_obj:
+            expression = re.sub(re.escape(search_obj.group(0)), r'', expression)
+
+    return expression
 
 
 def split_by_delimiters(expression):
@@ -71,7 +78,7 @@ def filter_redundant(item):
     for pattern in config.patterns:
         search_obj = pattern.search(item)
         if search_obj:
-            item = re.sub(search_obj.group(0), '', item)
+            item = re.sub(re.escape(search_obj.group(0)), r'', item)
     return item
 
 
@@ -89,33 +96,14 @@ def clean_whitespaces(item, regex):
     return item
 
 
-# def filter_countries(strings_list):
-#
-#     for item in strings_list:
-#         text = item.split()
-#         for word in text:
-#
-
-# def examine_matches(strings_list):
-#
-#     regex1 = re.compile(r'\b\w{2}([//,]\w{2})+\b', re.IGNORECASE)
-#     new_list1 = [m.group(0) for l in strings_list for m in [regex1.search(l)] if m]
-#     if new_list1:
-#         print(new_list1)
-
-
 if __name__ == '__main__':
 
     cleaner = NotesCleaner('files/stop_phrases.txt')
-
-    countries_list = []
-    with open('country.csv', 'r') as countries:
-        [countries_list.extend([key, value.strip()]) for key, value in (item.split(',') for item in countries)]
-        countries_set = frozenset(countries_list)
+    countries_cleaner = CountriesCleaner('files/country_table.csv', 'files/state_table.csv')
 
     with open(sys.argv[1], 'rt') as input_file:
         for row in input_file:
             new_element = separate_elements(row)
 
             #print(new_element)
-            cleaned_list.append(new_element)
+            #cleaned_list.append(new_element)

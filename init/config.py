@@ -4,6 +4,7 @@
 import re
 
 patterns = set()
+cutpatterns = set()
 
 #regular expressions to match business names where time zone is included
 timezone_pattern_alone = re.compile(r'^[ECMP][SD]T$')
@@ -25,6 +26,8 @@ company_value_pattern = re.compile(r"""
 
 """, flags=re.VERBOSE)
 
+notes_pattern = re.compile(r'\W?\w+\s(portion|license)', flags=re.IGNORECASE)
+
 buzz_pattern = re.compile(r"""
 
         \W?
@@ -36,4 +39,8 @@ buzz_pattern = re.compile(r"""
                              #usernames, passwords, etc.
 """, flags= re.VERBOSE)
 
-patterns.update({timezone_pattern_alone, timezone_pattern, company_value_pattern, buzz_pattern})
+formerly_pattern = re.compile(r'\W?(former|ehem|tidl).*', flags=re.IGNORECASE)
+
+patterns.update({timezone_pattern_alone, timezone_pattern, company_value_pattern, notes_pattern})
+
+cutpatterns.update({formerly_pattern, buzz_pattern})

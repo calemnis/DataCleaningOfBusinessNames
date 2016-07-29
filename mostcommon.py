@@ -15,7 +15,7 @@ if __name__ == '__main__':
         csvreader = csv.DictReader(csvfile, delimiter='\t')
         Chars = Counter()
         for row in csvreader:
-            for c in filter(is_special, row['company_registration_name']):
+            for c in filter(is_special, row['name']):
                 Chars[c] += 1
 
     for char, count in Chars.most_common(20):
