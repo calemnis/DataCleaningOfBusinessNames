@@ -41,6 +41,8 @@ buzz_pattern = re.compile(r"""
 
 formerly_pattern = re.compile(r'\W?(former|ehem|tidl).*', flags=re.IGNORECASE)
 
+countries_junk_pattern = re.compile(r'(?<!\w)(\w{2})([,/]\s?\w{2})+(?!\w)')
+
 patterns.update({timezone_pattern_alone, timezone_pattern, company_value_pattern, notes_pattern})
 
 cutpatterns.update({formerly_pattern, buzz_pattern})

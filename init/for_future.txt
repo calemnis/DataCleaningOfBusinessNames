@@ -15,3 +15,11 @@
 #             result = json.loads(resp.text)
 #             print (result['name'])
 #             print (result['altSpellings'])
+
+
+# def examine_matches(strings_list):
+#
+#     regex1 = re.compile(r'\b\w{2}([//,]\w{2})+\b', re.IGNORECASE)
+#     new_list1 = [m.group(0) for l in strings_list for m in [regex1.search(l)] if m]
+#     if new_list1:
+#         print(new_list1)
