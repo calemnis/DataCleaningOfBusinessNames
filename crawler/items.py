@@ -8,8 +8,12 @@
 import scrapy
 
 
+class WebsiteItem(scrapy.Item):
+    id = scrapy.Field()
+    url = scrapy.Field()
+
+
 class AboutItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    title = scrapy.Field()
-    link = scrapy.Field()
+    id = scrapy.Field()
+    url_title = scrapy.Field()
+    about_url = scrapy.Field()

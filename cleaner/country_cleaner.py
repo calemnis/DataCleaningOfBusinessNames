@@ -15,18 +15,16 @@ class CountriesCleaner:
     def extend_list(self, item):
         new_list = item.split(',')
         for item in new_list:
-            self.countries_list.append(item.strip())
+            if item is not '':
+                self.countries_list.append(item.strip())
 
-    def __init__(self, countries_file, states_file):
+    def __init__(self, countries_file):
 
         self.compiled_countries = []
         self.countries_list = []
 
         with open(countries_file, 'r') as countries:
-            [self.extend_list(country.strip()) for country in countries]
-
-        with open(states_file, 'r') as states:
-            [self.extend_list(state.strip()) for state in states]
+            [self.extend_list(row.strip()) for row in countries]
 
         self.compiled_countries = [re.compile(r'^' + country + r'$') for country in self.countries_list]
 

@@ -3,6 +3,16 @@
 
 import re
 
+
+results = ''
+
+
+def get_results_file():
+    if results is not None:
+        return results
+    else:
+        raise ValueError('Value of results file is not set.')
+
 patterns = set()
 cutpatterns = set()
 
