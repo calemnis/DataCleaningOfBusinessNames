@@ -8,15 +8,12 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from data_cleaner.cleaner.note_cleaner import NotesCleaner
-from data_cleaner.cleaner.country_cleaner import CountriesCleaner
-from data_cleaner import config
-from data_cleaner.runner.spider_runner import SpiderRunner
+from cleaner.note_cleaner import NotesCleaner
+from cleaner.country_cleaner import CountriesCleaner
+import config
+from runner.spider_runner import SpiderRunner
 
-from data_cleaner import ahocorasick
-
-
-from data_cleaner.crawler.pipelines import CrawlerPipeline
+import ahocorasick
 
 #TODO
 #konfidentiellt, konzerlösung, other foreign language expressions

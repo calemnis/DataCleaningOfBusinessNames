@@ -5,8 +5,8 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
-from data_cleaner.config import get_results_file
-from data_cleaner.crawler.items import PageItem
+from config import get_results_file
+from crawler.items import PageItem
 import csv
 
 class CrawlerPipeline(object):

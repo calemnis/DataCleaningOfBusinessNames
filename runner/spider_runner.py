@@ -6,7 +6,7 @@ import os.path
 from twisted.internet import reactor
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.log import configure_logging
-from data_cleaner.crawler.spiders.company_site_crawler import CompanySiteSpider
+from crawler.spiders.company_site_crawler import CompanySiteSpider
 from scrapy.utils.project import get_project_settings
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))

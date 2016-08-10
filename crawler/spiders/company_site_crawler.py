@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import scrapy
-from data_cleaner.crawler.items import AboutItem, WebsiteItem, PageItem
+from crawler.items import AboutItem, WebsiteItem, PageItem
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from scrapy.spidermiddlewares.httperror import HttpError
