@@ -6,7 +6,7 @@ import os.path
 from twisted.internet import reactor
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.log import configure_logging
-from src.crawler.spiders.company_site_crawler import CompanySiteSpider
+from data_cleaner.crawler.spiders.company_site_crawler import CompanySiteSpider
 from scrapy.utils.project import get_project_settings
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -29,7 +29,7 @@ class SpiderRunner:
         spider = CompanySiteSpider()
 
         # scrapy uses this to set default log settings.
-        #configure_logging()
+        configure_logging()
 
         # starts a given Crawlers crawl method.
         # When the crawling is finished returns a deferred. (késleltetés)

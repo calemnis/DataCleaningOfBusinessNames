@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from src.separator_logic import strip_elements
+from data_cleaner.separator_logic import strip_elements
 
 
 class TestStrip(unittest.TestCase):

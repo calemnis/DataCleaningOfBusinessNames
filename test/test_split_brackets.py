@@ -3,7 +3,7 @@
 
 import unittest
 
-from src.separator_logic import split_by_delimiters
+from data_cleaner.separator_logic import split_by_delimiters
 
 
 class TestBracketsAsDelimiters(unittest.TestCase):

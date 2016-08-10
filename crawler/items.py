@@ -17,3 +17,8 @@ class AboutItem(scrapy.Item):
     id = scrapy.Field()
     url_title = scrapy.Field()
     about_url = scrapy.Field()
+
+
+class PageItem(scrapy.Item):
+    id = scrapy.Field()
+    content = scrapy.Field()

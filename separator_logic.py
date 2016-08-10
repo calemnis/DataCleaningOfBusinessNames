@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import csv
 import os.path
 import re
 import sys
-import csv
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.cleaner.note_cleaner import NotesCleaner
-from src.cleaner.country_cleaner import CountriesCleaner
-from src.init import config
-from src.runner.spider_runner import SpiderRunner
+from data_cleaner.cleaner.note_cleaner import NotesCleaner
+from data_cleaner.cleaner.country_cleaner import CountriesCleaner
+from data_cleaner import config
+from data_cleaner.runner.spider_runner import SpiderRunner
 
+from data_cleaner import ahocorasick
+
+
+from data_cleaner.crawler.pipelines import CrawlerPipeline
 
 #TODO
 #konfidentiellt, konzerlösung, other foreign language expressions
@@ -35,7 +39,6 @@ def separate_elements(line):
     cleaned_strings_list = []
     for item in strings_list:
         item = filter_redundant(item)
-        item = CountriesCleaner.filter_junk(item)
         item = cleaner.filter_sales_notes(item)
         item = countries_cleaner.filter_alone_countries(item)
         #clean_small_junk(item)
@@ -95,24 +98,40 @@ def clean_whitespaces(item, regex):
 
 if __name__ == '__main__':
 
+    full_clean = False
     cleaner = NotesCleaner('files/stop_phrases.txt')
     countries_cleaner = CountriesCleaner('files/countries_table.csv')
 
-    results_file = 'files/cleaned_businessnames.csv'
-    config.results = results_file
-    with open(sys.argv[1], 'rt') as input_file, open(results_file, 'wt') as results:
+    with open(sys.argv[1], 'rt') as input_file:
 
         reader = csv.DictReader(input_file, delimiter='\t')
-        writer = csv.DictWriter(results, fieldnames=['account_id', 'name', 'company_registration_name', 'cleaned_name'])
+        if len(reader.fieldnames) == 4:
+            full_clean = True
 
-        spider_runner = SpiderRunner(raw_data_file=sys.argv[1])
-        writer.writeheader()
+        if full_clean:
 
-        for row in reader:
+            results_file = 'files/cleaned_businessnames.csv'
+            config.results = results_file
 
-            cleaned_business_name = separate_elements(row['name'])
-            writer.writerow({'account_id': row['account_id'],
-                            'name': row['name'], 'company_registration_name': row['company_registration_name'],
-                             'cleaned_name': '\t'.join(cleaned_business_name)})
+            with open(results_file, 'wt') as results:
 
-    spider_runner.run_spider()
+                writer = csv.DictWriter(results, fieldnames=['account_id', 'name', 'company_registration_name', 'cleaned_name'])
+                writer.writeheader()
+                spider_runner = SpiderRunner(raw_data_file=sys.argv[1])
+
+                for row in reader:
+
+                    cleaned_business_name = separate_elements(row['name'])
+                    writer.writerow({'account_id': row['account_id'],
+                                    'name': row['name'], 'company_registration_name': row['company_registration_name'],
+                                     'cleaned_name': '\t'.join(cleaned_business_name)})
+
+                spider_runner.run_spider()
+                #ahocorasick.download()
+
+
+        else:
+            for row in reader:
+                print(row['name'])
+                cleaned_business_name = separate_elements(row['name'])
+                print(cleaned_business_name)

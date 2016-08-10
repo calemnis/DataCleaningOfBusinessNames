@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import scrapy
-from scrapy.spiders import CrawlSpider
-from src.crawler.items import AboutItem, WebsiteItem
+from data_cleaner.crawler.items import AboutItem, WebsiteItem, PageItem
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from scrapy.spidermiddlewares.httperror import HttpError
@@ -47,7 +49,8 @@ class CompanySiteSpider(scrapy.Spider):
                 account_id = file_array[0]
                 website_url = file_array[3].strip()
                 if is_valid_url(website_url):
-                    yield scrapy.Request(url=website_url, callback=self.parse, errback=self.handle_errors, meta={'url': account_id})
+                    yield scrapy.Request(url=website_url,
+                                         callback=self.parse, errback=self.handle_errors, meta={'url': account_id})
 
     def parse(self, response):
         print("------SCRAPING '%s'" % response.url)
@@ -74,9 +77,34 @@ class CompanySiteSpider(scrapy.Spider):
                 return
 
             base = response.url
-            item['about_url'] = urljoin(base, relative)
-
+            whole_link = urljoin(base, relative)
+            item['about_url'] = whole_link
             yield item
+
+    #         request = scrapy.Request(url=whole_link,
+    #                                  callback=self.parse_about_page,
+    #                                  errback=self.handle_errors, meta={'id': response.meta['url']})
+    #         yield request
+    #
+    # def parse_about_page(self, response):
+    #     soup = BeautifulSoup(response.text, 'html.parser')
+    #     texts = soup.find_all(text=True)
+    #
+    #     def visible(element):
+    #         if element.parent.name in ['style', 'script', '[document]', 'head', 'title']:
+    #             return False
+    #         elif re.match('<!--.*-->', str(element)):
+    #             return False
+    #         return True
+    #
+    #     item = PageItem()
+    #     item['id'] = response.meta['id']
+    #     text = filter(visible, texts)
+    #     print(type(text))
+    #     return
+    #     item['content'] = text[0, 150]
+    #     yield item
+
 
     # TODO problems arised here.
     def handle_errors(self, failure):
@@ -84,16 +112,19 @@ class CompanySiteSpider(scrapy.Spider):
             # these exceptions come from HttpError spider middleware
             # you can get the non-200 response
             response = failure.value.response
-            print('HttpError on %s', response.url)
+            #print('HttpError on ' + response.url)
+            self.logger.error('HttpError on %s', response.url)
 
         elif failure.check(DNSLookupError):
             # this is the original request
             request = failure.request
-            print('DNSLookupError on %s', request.url)
+            #print('DNSLookupError on ' + request.url)
+            self.logger.error('DNSLookupError on %s', request.url)
 
         elif failure.check(TimeoutError, TCPTimedOutError):
             request = failure.request
-            print('TimeoutError on %s', request.url)
+            #print('TimeoutError on ' + request.url)
+            self.logger.error('TimeoutError on %s', request.url)
 
 
 

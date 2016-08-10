@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import unittest
-from src.separator_logic import cut_redundant
+from data_cleaner.separator_logic import cut_redundant
 
 
 class TestCuttingRedundantFormerlyExpressions(unittest.TestCase):
