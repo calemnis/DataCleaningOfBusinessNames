@@ -11,9 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from cleaner.note_cleaner import NotesCleaner
 from cleaner.country_cleaner import CountriesCleaner
 import config
-from runner.spider_runner import SpiderRunner
-
-import ahocorasick
+from validator.name_validator import NameValidator
 
 #TODO
 #konfidentiellt, konzerlösung, other foreign language expressions
@@ -21,12 +19,6 @@ import ahocorasick
 #dach
 
 #think about small junks, strings left little special characters like **, #, ^, !!!!!, -, one letters (c), etc
-
-#all the time renaming values, func names!
-#filter redundant - module regex, pythex, PCRE library may improve readability
-
-#home work from David! rest api - queries can be multiple
-#grep
 
 
 def separate_elements(line):
@@ -38,7 +30,6 @@ def separate_elements(line):
         item = filter_redundant(item)
         item = cleaner.filter_sales_notes(item)
         item = countries_cleaner.filter_alone_countries(item)
-        #clean_small_junk(item)
         cleaned_strings_list.append(item)
 
     strings_list = strip_elements(cleaned_strings_list)
@@ -114,21 +105,20 @@ if __name__ == '__main__':
 
                 writer = csv.DictWriter(results, fieldnames=['account_id', 'name', 'company_registration_name', 'cleaned_name'])
                 writer.writeheader()
-                spider_runner = SpiderRunner(raw_data_file=sys.argv[1])
+                name_validator = NameValidator(websites_file=sys.argv[1])
+                name_validator.make_normalize()
 
-                for row in reader:
-
-                    cleaned_business_name = separate_elements(row['name'])
-                    writer.writerow({'account_id': row['account_id'],
-                                    'name': row['name'], 'company_registration_name': row['company_registration_name'],
-                                     'cleaned_name': '\t'.join(cleaned_business_name)})
-
-                spider_runner.run_spider()
-                #ahocorasick.download()
-
+                # for row in reader:
+                #
+                #     cleaned_business_name = separate_elements(row['name'])
+                #     writer.writerow({'account_id': row['account_id'],
+                #                     'name': row['name'], 'company_registration_name': row['company_registration_name'],
+                #                      'cleaned_name': '\t'.join(cleaned_business_name)})
+    
 
         else:
             for row in reader:
                 print(row['name'])
                 cleaned_business_name = separate_elements(row['name'])
                 print(cleaned_business_name)
+
