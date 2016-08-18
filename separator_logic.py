@@ -5,6 +5,7 @@ import csv
 import os.path
 import re
 import sys
+import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -105,8 +106,11 @@ if __name__ == '__main__':
 
                 writer = csv.DictWriter(results, fieldnames=['account_id', 'name', 'company_registration_name', 'cleaned_name'])
                 writer.writeheader()
+
                 name_validator = NameValidator(websites_file=sys.argv[1])
-                name_validator.make_normalize()
+                start_time = time.time()
+                name_validator.get_url_correspondence()
+                print(time.time() - start_time, "seconds")
 
                 # for row in reader:
                 #

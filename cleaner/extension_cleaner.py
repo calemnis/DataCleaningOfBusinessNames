@@ -16,7 +16,7 @@ class CompanyExtensionCleaner:
             for ext in extensions:
                 self.compiled_extensions.append(ext.strip())
 
-        self.compiled_extensions = [re.compile(r'\b' + ext + r'\b')
+        self.compiled_extensions = [re.compile(r'\b' + re.escape(ext) + r'\b')
                                       for ext in self.compiled_extensions]
 
     def filter_extensions(self, item):
