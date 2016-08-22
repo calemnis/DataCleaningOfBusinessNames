@@ -102,23 +102,25 @@ if __name__ == '__main__':
             results_file = 'files/cleaned_businessnames.csv'
             config.results = results_file
 
-            with open(results_file, 'wt') as results:
+            # with open(results_file, 'wt') as results:
+            #
+            #     writer = csv.DictWriter(results, fieldnames=['account_id', 'website', 'name', 'company_registration_name', 'cleaned_name'])
+            #     writer.writeheader()
+            #
+            #
+            #     for row in reader:
+            #
+            #         cleaned_business_name = separate_elements(row['name'])
+            #         writer.writerow({'account_id': row['account_id'], 'website': row['website'],
+            #                         'name': row['name'], 'company_registration_name': row['company_registration_name'],
+            #                          'cleaned_name': '\t'.join(cleaned_business_name)})
 
-                writer = csv.DictWriter(results, fieldnames=['account_id', 'name', 'company_registration_name', 'cleaned_name'])
-                writer.writeheader()
+            name_validator = NameValidator(cleaned_file=results_file)
+            start_time = time.time()
+            name_validator.get_url_correspondence()
+            end_time = time.time() - start_time
+            print(end_time, "seconds" )
 
-                name_validator = NameValidator(websites_file=sys.argv[1])
-                start_time = time.time()
-                name_validator.get_url_correspondence()
-                print(time.time() - start_time, "seconds")
-
-                # for row in reader:
-                #
-                #     cleaned_business_name = separate_elements(row['name'])
-                #     writer.writerow({'account_id': row['account_id'],
-                #                     'name': row['name'], 'company_registration_name': row['company_registration_name'],
-                #                      'cleaned_name': '\t'.join(cleaned_business_name)})
-    
 
         else:
             for row in reader:
