@@ -3,7 +3,7 @@
 
 import unittest
 
-from data_cleaner.separator_logic import filter_redundant
+from separator_logic import filter_redundant
 
 
 class TestCountryJunkCleaner(unittest.TestCase):

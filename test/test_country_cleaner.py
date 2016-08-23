@@ -3,14 +3,14 @@
 
 import unittest
 
-from data_cleaner.cleaner.country_cleaner import CountriesCleaner
+from cleaner.country_cleaner import CountriesCleaner
 
 
 class TestCountriesCleaner(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.cleaner = CountriesCleaner('data_cleaner/files/countries_table.csv')
+        self.cleaner = CountriesCleaner('files/countries_table.csv')
 
     def test_when_no_expression_returns_empty_string(self):
         self.assertEqual('', self.cleaner.filter_alone_countries(''))

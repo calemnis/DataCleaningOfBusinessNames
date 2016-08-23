@@ -15,12 +15,8 @@ from cleaner.extension_cleaner import CompanyExtensionCleaner
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-# TODO #1 check query_with_normalized
-# TODO #2 validate with the help of the new normalized column - website
-# TODO #3 orb_companies_names port to table and foreign key orb_num
-
-URLs_list = []
-Cleaned_query_list = []
+# TODO optimizing the validating function
+# TODO orb_companies_names port to table and foreign key orb_num
 
 
 class NameValidator:
@@ -38,11 +34,11 @@ class NameValidator:
     def is_valid(url):
         return validators.url(url)
 
-    def not_ascii(s):
-        return all(ord(c) > 128 for c in s)
-
     def get_ratio(self, first, second):
         return Levenshtein.ratio(first, second)
+
+    def get_jaro(self, first, second):
+        return Levenshtein.jaro(first, second)
 
     def normalize_name(self, name):
         name = self.extension_cleaner.filter_extensions(name)
@@ -67,25 +63,87 @@ class NameValidator:
         website = regex.sub('', website)
         return website
 
+    def get_domain(self, website):
+        extracted = tldextract.extract(website)
+        domain = extracted.registered_domain
+        return domain
+
+    def find_with_jaro(self, examined_names, normalized):
+
+        try:
+            first_name = examined_names[0]
+            first_norm = self.normalize_name(first_name)
+            if self.get_jaro(first_norm, normalized) > 0.60:
+                return True
+            return False
+        except IndexError:
+            print("AN INDEXERROR OCCURRED - JARO", examined_names)
+
+    def find_by_normalized(self, examined_names):
+
+        for name in examined_names:
+            normalized_name = self.normalize_name(name)
+
+            result = self.cursor.execute("SELECT name, normalized FROM orb_companies.normalized_companies WHERE normalized=%s",
+                 normalized_name)
+
+            if result:
+                return True
+        return False
+
+    def find_with_weight(self, examined_names, normalized):
+
+        try:
+            weight = 0
+            first_name = examined_names[0].split()[0]
+            first_norm = self.normalize_name(first_name)
+            if self.get_ratio(first_norm, normalized) == 1.0:
+                weight = 0.20
+
+            for examined_name in examined_names:
+                normalized_name = self.normalize_name(examined_name)
+
+                ratio = self.get_ratio(normalized_name, normalized) + weight
+                if ratio > 0.50:
+                    return True
+            return False
+
+        except IndexError:
+            print("AN INDEXERROR OCCURRED - WEIGHTING", examined_names)
+
+    def prepare_candidates(self, row):
+
+        cleaned_names = row['cleaned_name']
+        examined_names_list = cleaned_names.split('\t')
+        normalized_original = self.normalize_name(row['name'])
+        normalized_registry = self.normalize_name(row['company_registration_name'])
+
+        if normalized_registry:
+            examined_names_list.append(normalized_registry)
+        examined_names_list.append(normalized_original)
+        return examined_names_list
+
     def get_url_correspondence(self):
-        success = 0
+        valid_result_success = 0
+        valid_result_jaro = 0
+        valid_result_failed = 0
+
+        valid_no_result_success = 0
+        valid_no_result_failed = 0
+
+        no_valid_website_success = 0
+        no_valid_website_failed = 0
 
         with open(self.cleaned_file, 'rt') as candidates:
             reader = csv.DictReader(candidates)
 
             for row in reader:
                 website = row['website']
-                cleaned_names = row['cleaned_name']
-                simple_name = row['name']
-
                 normalized_website = self.normalize_site(website)
-                cleaned_names_list = cleaned_names.split('\t')
-                examined_cleaned = cleaned_names_list[0]
-                normalized_cleaned_name = self.normalize_name(examined_cleaned)
+                examined_names = self.prepare_candidates(row)
 
-                if NameValidator.is_valid(website):
-                    extracted = tldextract.extract(normalized_website)
-                    domain = extracted.registered_domain
+                if normalized_website and NameValidator.is_valid(normalized_website):
+                    domain = self.get_domain(normalized_website)
 
                     result = self.cursor.execute('''
                         SELECT name, normalized
@@ -95,31 +153,55 @@ class NameValidator:
                         WHERE d.webdomain=%s''', domain)
                     if result:
                         record = self.cursor.fetchone()
-                        ratio = self.get_ratio(normalized_cleaned_name, record['normalized'])
-                        if ratio > 0.50:
-                            success += 1
-                            URLs_list.append(record['normalized'])
-                            # if success % 500 == 0:
-                            #     print(normalized_cleaned_name, record['name'])
+                        normalized_record = record['normalized']
+
+                        if self.find_with_weight(examined_names, normalized_record):
+                            valid_result_success += 1
+                        elif self.find_with_jaro(examined_names, normalized_record):
+                            valid_result_jaro += 1
                         else:
-                            if success % 100 == 0:
-                                print(ratio, simple_name, '\t', record['name'], '\t', normalized_cleaned_name, record['normalized'])
+                            valid_result_failed += 1
 
-            print(success)
-            # match: 61% of our websites exists in orb database - this is ~36162 (overall 60.99%)
-            # match: ORIGINAL name VS. name: 12984 is over 0.85 levenshtein ratio from ~36162 (35.905%, overall 21.902%)
-            # match: ORIGINAL name VS. name: 14736 is over 0.80 levenshtein ratio from ~36162 (40.749%, overall 24.85%)
+                    elif self.find_by_normalized(examined_names):
+                        valid_no_result_success += 1
+                    else:
+                        valid_no_result_failed += 1
 
-            # match: ORIGINAL normalized name VS. normalized column, levenshtein ratio 0.80:
-                # 20507 from ~36162 (overall 34.592%)
-            # match: CLEANED normalized name VS. normalized column, levenshtein ratio 0.80:
-                # 22187 from ~36162
-            # match: CLEANED normalized name VS. normalized column, levenshtein ratio 0.75:
-                # 23437
-            # match: CLEANED normalized name VS. normalized column, levenshtein ratio >=0.60:
-                # 27350
-            # match: CLEANED normalized name VS. normalized column, levenshtein ratio >0.50:
-                # 29644
+                elif self.find_by_normalized(examined_names):
+                    no_valid_website_success += 1
+                else:
+                    no_valid_website_failed += 1
+
+            print("valid_result_success:", valid_result_success)
+            print("valid_result_jaro:", valid_result_jaro)
+            print("valid_result_failed:", valid_result_failed)
+
+            print("valid_no_result_success:", valid_no_result_success)
+            print("valid_no_result_failed:", valid_no_result_failed)
+
+            print("no_valid_website_success", no_valid_website_success)
+            print("no_valid_website_fail", no_valid_website_failed)
+
+            # match: 70.53% of our websites exists in orb database - this is ~41813
+            # 5647 not valid, 53634 valid and from this 41813 exists in database
+            # match: ORIGINAL name VS. name: ratio 0.80: 14926
+            # match: ORIGINAL name VS. name: ratio 0.70: 20925
+            # match: ORIGINAL name VS. name: ratio 0.50: 33738
+
+            # match: ORIGINAL normalized name VS. normalized column, ratio 0.80: 23514
+            # match: ORIGINAL normalized name VS. normalized column, ratio 0.70: 26972
+            # match: ORIGINAL normalized name VS. normalized column, ratio 0.50: 33738
+
+            # match: CLEANED normalized name VS. normalized column, ratio 0.80: 25456
+            # match: CLEANED normalized name VS. normalized column, ratio 0.70: 28395
+            # match: CLEANED normalized name VS. normalized column, ratio 0.60: 31196
+            # match: CLEANED normalized name VS. normalized column, ratio 0.50: 33976
+
+            # match: CLEANED NAME LIST normalized VS. normalized col, ratio 0.80: 26448 (+ simple: 26565)
+            # match: CLEANED NAME LIST normalized VS. normalized col, ratio 0.70: 29511 (+ simple: 29619)
+            # match: CLEANED NAME LIST normalized VS. normalized col, ratio 0.60: 32393 (+ simple: 32529)
+            # match: CLEANED NAME LIST normalized VS. normalized col, ratio 0.50: 35178 (+ simple: 35330, + registry 35835)
+
 
     def query_with_normalized(self):
 
@@ -141,7 +223,6 @@ class NameValidator:
                 if result:
                     record = self.cursor.fetchone()
                     success += 1
-                    Cleaned_query_list.append(record['normalized'])
                     if success % 500 == 0:
                         print(normalized_cleaned_name, record['normalized'])
         print(success)
@@ -155,62 +236,13 @@ class NameValidator:
         # match cleaned NTH name, IF EXISTS:
             # 39085
 
-    def unique(self, a):
-        return len(set(a))
-
-    def diff(self, first, second):
-        return len(set(first) - set(second))
-
-    def get_union(self):
-        print("I am the urls list. Want to know How unique am I?", "But first my length: ", len(URLs_list))
-        print("This unique you dumbheads:", self.unique(URLs_list))
-
-        print("I am the simple cleaned names queries list. How unique am I?", "First my length:",
-              len(Cleaned_query_list))
-        print("This unique you dumbheads:", self.unique(Cleaned_query_list))
-
-        print("Our intersection is", len(set(URLs_list) & set(Cleaned_query_list)), "long")
-        print("Our union is", len(set(URLs_list) | set(Cleaned_query_list)), "long")
-
-        print("Our difference is...", self.diff(URLs_list, Cleaned_query_list),
-              self.diff(Cleaned_query_list, URLs_list))
-
-        #regarding intersection of the two sets (urls and simple search by cleaned normalized name):
-            # match cleaned FIRST candidate vs. normalized column:
-                # 36541 from 59282(all) (overall 61.63%)
-            # match: CLEANED normalized name VS. normalized column, levenshtein ratio 0.80:
-                # 22187 from ~36162 (overall 61.354%)
-
-            # I am the urls list. Want to know How unique am I? But first my length:  22187
-            # This unique you dumbheads: 21573
-            # I am the simple cleaned names queries list. How unique am I? First my length: 36541
-            # This unique you dumbheads: 34640
-            # Our intersection is 16999 long
-            # Our union is 39214 long
-            # Our difference is...   4574 17641
-
-    def make_normalize(self):
-        success = 0
-        step = 1000
-        for i in range(0, 520000, step):
-            self.connection.begin()
-            self.cursor.execute("SELECT orb_num, name FROM filtered_companies29 ORDER BY orb_num LIMIT %s,%s", (i, step))
-            for row in self.cursor.fetchall():
-                normalized = self.normalize_name(row['name'])
-                if not normalized:
-                    print(row, 'this entry is not normalized - empty')
-                self.cursor.execute("UPDATE filtered_companies29 SET normalized=%s WHERE name=%s", (normalized, row['name']))
-                success += 1
-            self.connection.commit()
-        print(success)
-
     def load_csv(self):
 
-        with open('files/filtered_companies.csv', 'rt') as input_file:
+        with open('files/orb_companies_names.csv', 'rt') as input_file:
             reader = csv.DictReader(input_file)
-            with open('files/normalized_companies.csv', 'wt') as results:
+            with open('files/normalized_names.csv', 'wt') as results:
                 writer = csv.DictWriter(results,
-                                        fieldnames=['orb_num', 'name', 'state', 'country', 'normalized'])
+                                        fieldnames=['orb_num', 'name', 'normalized'])
                 writer.writeheader()
 
                 for row in reader:
@@ -218,8 +250,7 @@ class NameValidator:
                     normalized_name = normalized_name.strip()
                     normalized_name = self.normalize_name(normalized_name)
 
-                    writer.writerow({'orb_num': row['orb_num'], 'name': row['name'], 'state': row['state'],
-                                    'country': row['country'], 'normalized': normalized_name})
+                    writer.writerow({'orb_num': row['orb_num'], 'name': row['name'], 'normalized': normalized_name})
 
 
 

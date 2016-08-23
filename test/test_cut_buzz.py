@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import unittest
-from data_cleaner.separator_logic import cut_redundant
+from separator_logic import cut_redundant
 
 
 class TestCuttingRedundantBuzz(unittest.TestCase):

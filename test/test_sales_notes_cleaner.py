@@ -3,14 +3,14 @@
 
 import unittest
 
-from data_cleaner.cleaner.note_cleaner import NotesCleaner
+from cleaner.note_cleaner import NotesCleaner
 
 
 class TestSalesNotesFilter(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.cleaner = NotesCleaner('data_cleaner/files/stop_phrases.txt')
+        self.cleaner = NotesCleaner('files/stop_phrases.txt')
 
     def test_when_no_expression_returns_empty_string(self):
         self.assertEqual('', self.cleaner.filter_sales_notes(''))
