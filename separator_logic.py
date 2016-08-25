@@ -93,8 +93,8 @@ if __name__ == '__main__':
 
     with open(sys.argv[1], 'rt') as input_file:
 
-        reader = csv.DictReader(input_file, delimiter='\t')
-        if len(reader.fieldnames) == 4:
+        reader = csv.DictReader(input_file)
+        if len(reader.fieldnames) == 5:
             full_clean = True
 
         if full_clean:
@@ -104,20 +104,20 @@ if __name__ == '__main__':
 
             # with open(results_file, 'wt') as results:
             #
-            #     writer = csv.DictWriter(results, fieldnames=['account_id', 'website', 'name', 'company_registration_name', 'cleaned_name'])
+            #     writer = csv.DictWriter(results,
+            #         fieldnames=['account_id', 'website', 'name', 'company_registration_name', 'cleaned_name', 'country'])
             #     writer.writeheader()
-            #
             #
             #     for row in reader:
             #
             #         cleaned_business_name = separate_elements(row['name'])
             #         writer.writerow({'account_id': row['account_id'], 'website': row['website'],
             #                         'name': row['name'], 'company_registration_name': row['company_registration_name'],
-            #                          'cleaned_name': '\t'.join(cleaned_business_name)})
+            #                          'cleaned_name': '\t'.join(cleaned_business_name), 'country': row['country']})
 
             name_validator = NameValidator(cleaned_file=results_file)
             start_time = time.time()
-            name_validator.get_url_correspondence()
+            name_validator.validate()
             end_time = time.time() - start_time
             print(end_time, "seconds" )
 
