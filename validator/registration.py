@@ -7,6 +7,7 @@ import json
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+
 class Registration:
 
     def __init__(self, account_id, orb_num, alternative, country, ratio):
@@ -14,7 +15,8 @@ class Registration:
             ratio = 1.0
         ratio = round(ratio, 3)
 
-        self.attributes = {'account_id': account_id, 'name': alternative, 'ratio': ratio, 'orb_num': orb_num, 'country': country}
+        self.attributes = {'account_id': account_id, 'name': alternative,
+                           'ratio': ratio, 'orb_num': orb_num, 'country': country}
 
     def __str__(self):
         return json.dumps(self.attributes)

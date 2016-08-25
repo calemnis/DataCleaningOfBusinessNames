@@ -7,6 +7,7 @@ import os.path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+
 class CompanyExtensionCleaner:
 
     def __init__(self, extensions_file):

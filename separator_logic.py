@@ -7,19 +7,12 @@ import re
 import sys
 import time
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
 from cleaner.note_cleaner import NotesCleaner
 from cleaner.country_cleaner import CountriesCleaner
 import config
 from validator.name_validator import NameValidator
 
-#TODO
-#konfidentiellt, konzerlösung, other foreign language expressions
-#same pattern is in parentheses
-#dach
-
-#think about small junks, strings left little special characters like **, #, ^, !!!!!, -, one letters (c), etc
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 
 def separate_elements(line):
@@ -34,7 +27,6 @@ def separate_elements(line):
         cleaned_strings_list.append(item)
 
     strings_list = strip_elements(cleaned_strings_list)
-
     return strings_list
 
 

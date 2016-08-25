@@ -7,6 +7,7 @@ import os.path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+
 class CountriesCleaner:
 
     def extend_list(self, item):
@@ -25,12 +26,10 @@ class CountriesCleaner:
 
         self.compiled_countries = [re.compile(r'^' + country + r'$') for country in self.countries_list]
 
-
     def filter_alone_countries(self, item):
 
         for compiled in self.compiled_countries:
             alone_search_obj = compiled.search(item)
             if alone_search_obj:
                 item = compiled.sub('', item)
-
         return item
