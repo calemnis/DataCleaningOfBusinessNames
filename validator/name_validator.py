@@ -18,7 +18,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # TODO optimizing the validating function (code design)
 # TODO check occurrences where normalized are the same, but original names are not
-# TODO write tests for validator logic
+# TODO write tests
+
 
 class NameValidator:
 
@@ -31,11 +32,7 @@ class NameValidator:
         self.cursor = self.connection.cursor()
         self.extension_cleaner = CompanyExtensionCleaner('files/company_extensions.txt')
         self.cleaned_results = 'files/cleaned_results.csv'
-
         self.registrations = []
-
-    def not_ascii(s):
-        return all(ord(c) > 128 for c in s)
 
     @staticmethod
     def is_valid(url):
@@ -52,10 +49,9 @@ class NameValidator:
     def get_jaro(first, second):
         return Levenshtein.jaro(first, second)
 
-    # TODO test - external dependence
-    def normalize_name(self, name):
-        # print(name)
-        name = self.extension_cleaner.filter_extensions(name)
+    @staticmethod
+    def normalize_name(name, extension_cleaner=CompanyExtensionCleaner('files/company_extensions.txt')):
+        name = extension_cleaner.filter_extensions(name)
         name = name.lower()
 
         exclude = set(string.punctuation + string.whitespace)
@@ -66,7 +62,6 @@ class NameValidator:
         nfkd_form = unicodedata.normalize('NFKD', unicode_string)
 
         result = u''.join([n for n in nfkd_form if not unicodedata.combining(n)])
-        # print(result)
         return result
 
     @staticmethod
@@ -81,8 +76,8 @@ class NameValidator:
             website = 'http://' + website
         return website
 
-    # TODO test
-    def get_domain(self, website):
+    @staticmethod
+    def get_domain(website):
         extracted = tldextract.extract(website)
         domain = extracted.registered_domain
         return domain
@@ -97,30 +92,23 @@ class NameValidator:
             WHERE d.webdomain=%s''', domain)
         return result
 
-    def find_with_weight(self, examined_names, normalized, weight):
-
+    @staticmethod
+    def find_with_weight(examined_names, normalized, weight):
         ratio = 0
-        try:
-
-            for name in examined_names:
-                ratio = NameValidator.get_ratio(name, normalized) + weight
-                if ratio > 0.5:
-                    return ratio
-            return ratio
-
-        except IndexError:
-            print("AN INDEXERROR OCCURRED - WEIGHTING", examined_names)
-
-    def find_with_jaro(self, examined_names, normalized):
-
-        try:
-            first_name = examined_names[0]
-            ratio = NameValidator.get_jaro(first_name, normalized)
-            if ratio > 0.60:
+        for name in examined_names:
+            ratio = NameValidator.get_ratio(name, normalized) + weight
+            if ratio > 0.5:
                 return ratio
+        return ratio
+
+    @staticmethod
+    def find_with_jaro(examined_names, normalized):
+
+        first_name = examined_names[0]
+        ratio = NameValidator.get_jaro(first_name, normalized)
+        if ratio > 0.60:
             return ratio
-        except IndexError:
-            print("AN INDEXERROR OCCURRED - JARO", examined_names)
+        return ratio
 
     def find_by_normalized(self, examined_names, account_country, account_id):
 
@@ -149,21 +137,23 @@ class NameValidator:
 
         return found
 
-    def prepare_candidates(self, row):
+    @staticmethod
+    def prepare_candidates(row):
 
         cleaned_names = row['cleaned_name']
         examined_names_list = cleaned_names.split('\t')
-        normalized_original = self.normalize_name(row['name'])
-        normalized_registry = self.normalize_name(row['company_registration_name'])
+        normalized_original = NameValidator.normalize_name(row['name'])
+        normalized_registry = NameValidator.normalize_name(row['company_registration_name'])
 
         if normalized_registry:
             examined_names_list.append(normalized_registry)
         examined_names_list.append(normalized_original)
 
-        examined_names_list = [self.normalize_name(name) for name in examined_names_list]
+        examined_names_list = [NameValidator.normalize_name(name) for name in examined_names_list]
         return examined_names_list
 
-    def adjust_weight(self, normalized, country, row):
+    @staticmethod
+    def adjust_weight(normalized, country, row):
 
         cleaned_names = row['cleaned_name']
         account_country = row['country']
@@ -172,13 +162,15 @@ class NameValidator:
         first_name = examined_names_list[0]
 
         weight = 0
-        if first_name and account_country:
+        if first_name:
             first_name = first_name.split()[0]
-            first_norm = self.normalize_name(first_name)
+            first_norm = NameValidator.normalize_name(first_name)
             if NameValidator.get_ratio(first_norm, normalized) == 1.0:
                 weight += 0.20
+        if account_country:
             if NameValidator.get_ratio(account_country, country) == 1.0:
                 weight += 0.20
+
         return weight
 
     def get_result(self, normalized_website):
@@ -187,12 +179,6 @@ class NameValidator:
         return result
 
     def validate(self):
-        valid_result_success = 0
-        valid_result_jaro = 0
-        valid_result_failed = 0
-
-        no_valid_website_or_result_success = 0
-        no_valid_website_or_result_failed = 0
 
         with open(self.cleaned_file, 'rt') as candidates:
             reader = csv.DictReader(candidates)
@@ -203,7 +189,7 @@ class NameValidator:
                 account_country = row['country']
                 account_id = row['account_id']
                 normalized_website = self.normalize_site(website)
-                examined_names = self.prepare_candidates(row)
+                examined_names = NameValidator.prepare_candidates(row)
 
                 if NameValidator.is_valid(normalized_website) and self.get_result(normalized_website):
 
@@ -213,36 +199,21 @@ class NameValidator:
                     record_country = record['country']
                     orb_num = record['orb_num']
 
-                    weight = self.adjust_weight(record_normalized, record_country, row)
+                    weight = NameValidator.adjust_weight(record_normalized, record_country, row)
                     ratio = self.find_with_weight(examined_names, record_normalized, weight)
 
                     if ratio > 0.5:
                         reg = Registration(account_id, orb_num, record_name, record_country, ratio)
                         self.registrations.append(reg)
-                        valid_result_success += 1
 
                     else:
                         ratio = self.find_with_jaro(examined_names, record_normalized)
                         if ratio > 0.6:
                             reg = Registration(account_id, orb_num, record_name, record_country, ratio)
                             self.registrations.append(reg)
-                            valid_result_jaro += 1
-                        else:
-                            valid_result_failed += 1
 
-                elif self.find_by_normalized(examined_names, account_country, account_id):
-                    no_valid_website_or_result_success += 1
                 else:
-                    no_valid_website_or_result_failed += 1
-
-            print("valid_result_success:", valid_result_success)
-            print("valid_result_jaro:", valid_result_jaro)
-            print("valid_result_failed:", valid_result_failed)
-
-            print("no_valid_website_success", no_valid_website_or_result_success)
-            print("no_valid_website_fail", no_valid_website_or_result_failed)
-
-            print("REG_LENGTH:", len(self.registrations))
+                    self.find_by_normalized(examined_names, account_country, account_id)
 
             self.write_to_file()
 

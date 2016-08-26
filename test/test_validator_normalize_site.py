@@ -8,7 +8,7 @@ from validator.name_validator import NameValidator
 
 class TestNormalizeSite(unittest.TestCase):
 
-    def test_when_no_site_(self):
+    def test_when_no_site_returns_empty_string(self):
         self.assertEqual('', NameValidator.normalize_site(''))
 
     def test_when_domain_gets_http(self):
