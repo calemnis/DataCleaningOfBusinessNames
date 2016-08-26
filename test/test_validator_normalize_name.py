@@ -7,7 +7,6 @@ from validator.name_validator import NameValidator
 
 class TestNormalizeName(unittest.TestCase):
 
-    # TODO this wont work like this...
     def test_when_gets_empty_string_returns_(self):
         self.assertEqual('', NameValidator.normalize_name(name=''))
 

@@ -20,7 +20,8 @@ class TestCuttingRedundantFormerlyExpressions(unittest.TestCase):
         self.assertEqual('Ergo Interactive', cut_redundant('Ergo Interactive Formerly know as Boombox INC'))
 
     def test_cuts_everything_after_formerly(self):
-        self.assertEqual('American Gaming Systems ', cut_redundant('American Gaming Systems (Formerly Cadillac Jack / Amaya)'))
+        self.assertEqual('American Gaming Systems ',
+                         cut_redundant('American Gaming Systems (Formerly Cadillac Jack / Amaya)'))
 
     def test_cuts_when_formerly_in_some_other_languages(self):
         self.assertEqual('IHS Global GmbH ', cut_redundant('IHS Global GmbH (ehemals iSuppli)'))

@@ -16,10 +16,6 @@ from validator.registration import Registration
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-# TODO optimizing the validating function (code design)
-# TODO check occurrences where normalized are the same, but original names are not
-# TODO write tests
-
 
 class NameValidator:
 
@@ -110,7 +106,7 @@ class NameValidator:
             return ratio
         return ratio
 
-    def find_by_normalized(self, examined_names, account_country, account_id):
+    def find_by_normalized(self, examined_names, account_name, account_country, account_id):
 
         found = False
         for name in examined_names:
@@ -127,13 +123,19 @@ class NameValidator:
                 for r in record:
                     name = r['BINARY name'].decode('utf-8')
                     if r['country'] == account_country:
+                        # gets a pseudo ratio of 0.99, because the website returned a result in the database
+                        # and the country is the same
                         pseudo_ratio = 0.99
                     else:
                         pseudo_ratio = 0.6
 
-                    reg = Registration(account_id, r['orb_num'], name, r['country'], pseudo_ratio)
+                    reg = Registration(account_id, account_name, r['orb_num'], name, r['country'], pseudo_ratio)
                     self.registrations.append(reg)
                     found = True
+
+        if not found:
+            reg = Registration(account_id, account_name, '', '', '', 0.0)
+            self.registrations.append(reg)
 
         return found
 
@@ -185,45 +187,51 @@ class NameValidator:
 
             for row in reader:
 
-                website = row['website']
-                account_country = row['country']
                 account_id = row['account_id']
-                normalized_website = self.normalize_site(website)
+                account_name = row['name']
+                normalized_website = self.normalize_site(row['website'])
                 examined_names = NameValidator.prepare_candidates(row)
 
                 if NameValidator.is_valid(normalized_website) and self.get_result(normalized_website):
 
                     record = self.cursor.fetchone()
                     record_normalized = record['normalized']
-                    record_name = record['name']
-                    record_country = record['country']
-                    orb_num = record['orb_num']
 
-                    weight = NameValidator.adjust_weight(record_normalized, record_country, row)
-                    ratio = self.find_with_weight(examined_names, record_normalized, weight)
+                    weight = NameValidator.adjust_weight(record_normalized, record['country'], row)
+                    levenshtein_ratio = self.find_with_weight(examined_names, record_normalized, weight)
 
-                    if ratio > 0.5:
-                        reg = Registration(account_id, orb_num, record_name, record_country, ratio)
+                    if levenshtein_ratio > 0.5:
+                        reg = Registration(account_id, account_name, record['orb_num'], record['name'],
+                                           record['country'], levenshtein_ratio)
                         self.registrations.append(reg)
 
                     else:
-                        ratio = self.find_with_jaro(examined_names, record_normalized)
-                        if ratio > 0.6:
-                            reg = Registration(account_id, orb_num, record_name, record_country, ratio)
+                        jaro_ratio = self.find_with_jaro(examined_names, record_normalized)
+                        if jaro_ratio > 0.6:
+                            reg = Registration(account_id, account_name, record['orb_num'], record['name'],
+                                               record['country'], jaro_ratio)
+                            self.registrations.append(reg)
+                        else:
+                            reg = Registration(account_id, account_name, '', '', '', 0.0)
                             self.registrations.append(reg)
 
+                elif self.find_by_normalized(examined_names, account_name, row['country'], account_id):
+                    pass
                 else:
-                    self.find_by_normalized(examined_names, account_country, account_id)
+                    reg = Registration(account_id, account_name, '', '', '', 0.0)
+                    self.registrations.append(reg)
 
             self.write_to_file()
 
     def write_to_file(self):
         with open('files/all_results.csv', 'wt') as results:
 
-            writer = csv.DictWriter(results, fieldnames=['account_id', 'name', 'ratio', 'orb_num', 'country'])
+            writer = csv.DictWriter(results,
+                                    fieldnames=['account_id', 'account_name', 'name', 'ratio', 'orb_num', 'country'])
             writer.writeheader()
 
             for reg in self.registrations:
 
-                writer.writerow({'account_id': reg['account_id'], 'name': reg['name'], 'ratio': reg['ratio'],
-                                 'orb_num': reg['orb_num'], 'country': reg['country']})
+                writer.writerow({'account_id': reg['account_id'], 'account_name': reg['account_name'],
+                                 'name': reg['name'], 'ratio': reg['ratio'], 'orb_num': reg['orb_num'],
+                                 'country': reg['country']})

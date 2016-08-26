@@ -33,7 +33,8 @@ class TestBracketsAsDelimiters(unittest.TestCase):
                          split_by_delimiters("Mercury Public Affairs [Uganda]"))
 
     def test_splits_in_presence_of_two_box_bracket_pairs(self):
-        self.assertEqual(['', "6", " Alltel Corporation ", "Etc", ''], split_by_delimiters("[6] Alltel Corporation [Etc]"))
+        self.assertEqual(['', "6", " Alltel Corporation ", "Etc", ''],
+                         split_by_delimiters("[6] Alltel Corporation [Etc]"))
 
     def test_split_handles_two_types_of_brackets(self):
         self.assertEqual(["Lenovo China ", "PC", ' ', "Do Not Reference", ''],

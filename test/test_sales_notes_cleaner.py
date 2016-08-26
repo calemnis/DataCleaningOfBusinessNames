@@ -46,7 +46,7 @@ class TestSalesNotesFilter(unittest.TestCase):
                          self.cleaner.filter_sales_notes('Bayer Healtcare Diabetes AS confidential'))
 
     def test_when_confidential_somethings_filters_whole_expression(self):
-        #the priority of the elements in the stop phrases file MATTERS.
+        # the priority of the elements in the stop phrases file MATTERS.
         self.assertEqual('', self.cleaner.filter_sales_notes('CONFIDENTIAL CLIENT'))
 
     def test_does_not_filter_same_expressions_in_foreign_languages(self):
